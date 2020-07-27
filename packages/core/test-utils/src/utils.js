@@ -432,6 +432,11 @@ function prepareBrowserContext(
       ];
     },
 
+    createEvent() {
+      // For Vue
+      return {timeStamp: Date.now()};
+    },
+
     getElementById() {
       return fakeElement;
     },

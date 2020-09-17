@@ -59,6 +59,7 @@ async function run({input, api, options}: RunOpts) {
     config: new ParcelConfig(
       config,
       options.packageManager,
+      options.inputFS,
       options.autoinstall,
     ),
   });
@@ -166,7 +167,7 @@ export class ResolverRunner {
         : {};
     }
 
-    let errors: Array<ThrowableDiagnostic> = [];
+    let diagnostics: Array<Diagnostic> = [];
     for (let resolver of resolvers) {
       try {
         let result = await resolver.plugin.resolve({
@@ -183,6 +184,7 @@ export class ResolverRunner {
 
           if (result.filePath != null) {
             return {
+              canDefer: result.canDefer,
               filePath: result.filePath,
               query,
               sideEffects: result.sideEffects,
@@ -192,14 +194,25 @@ export class ResolverRunner {
               isURL: dependency.isURL,
             };
           }
+
+          if (result.diagnostics) {
+            if (Array.isArray(result.diagnostics)) {
+              diagnostics.push(...result.diagnostics);
+            } else {
+              diagnostics.push(result.diagnostics);
+            }
+          }
         }
       } catch (e) {
         // Add error to error map, we'll append these to the standard error if we can't resolve the asset
-        errors.push(
-          new ThrowableDiagnostic({
-            diagnostic: errorToDiagnostic(e, resolver.name),
-          }),
-        );
+        let errorDiagnostic = errorToDiagnostic(e, resolver.name);
+        if (Array.isArray(errorDiagnostic)) {
+          diagnostics.push(...errorDiagnostic);
+        } else {
+          diagnostics.push(errorDiagnostic);
+        }
+
+        break;
       }
     }
 
@@ -222,13 +235,8 @@ export class ResolverRunner {
       `Failed to resolve '${specifier}' ${dir ? `from '${dir}'` : ''}`,
     );
 
-    // Merge resolver errors
-    if (errors.length) {
-      for (let error of errors) {
-        err.diagnostics.push(...error.diagnostics);
-      }
-    }
-
+    // Merge diagnostics
+    err.diagnostics.push(...diagnostics);
     err.code = 'MODULE_NOT_FOUND';
 
     throw err;

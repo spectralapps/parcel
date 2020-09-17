@@ -249,8 +249,8 @@ export type BuildMode = 'development' | 'production' | string;
 export type InitialParcelOptions = {|
   +entries?: FilePath | Array<FilePath>,
   +entryRoot?: FilePath,
-  +config?: ResolvedParcelConfigFile,
-  +defaultConfig?: ResolvedParcelConfigFile,
+  +config?: ModuleSpecifier,
+  +defaultConfig?: ModuleSpecifier,
   +env?: EnvMap,
   +targets?: ?(Array<string> | {+[string]: TargetDescriptor, ...}),
 
@@ -1015,6 +1015,10 @@ export type ResolveResult = {|
   +sideEffects?: boolean,
   /** A resolver might want to resolve to a dummy, in this case <code>filePath</code> is rather "resolve from". */
   +code?: string,
+  /** Whether this dependency can be deferred by Parcel itself (true by default) */
+  +canDefer?: boolean,
+  /** A resolver might return diagnostics to also run subsequent resolvers while still providing a reason why it failed*/
+  +diagnostics?: Diagnostic | Array<Diagnostic>,
 |};
 
 export type ConfigOutput = {|
